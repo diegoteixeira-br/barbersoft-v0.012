@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -31,7 +31,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import type { Barber } from "@/hooks/useBarbers";
 import type { Service } from "@/hooks/useServices";
-import { Zap, CalendarClock } from "lucide-react";
+import { Zap, CalendarClock, Split } from "lucide-react";
 
 const formSchema = z.object({
   client_name: z.string().min(1, "Nome do cliente é obrigatório"),
