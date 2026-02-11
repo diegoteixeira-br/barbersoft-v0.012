@@ -47,7 +47,7 @@ export function Navbar() {
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-2 group">
+            <Link to="/" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} className="flex items-center gap-2 group">
               <div className="p-2 rounded-lg bg-gold/10 group-hover:bg-gold/20 transition-colors">
                 <Scissors className="h-6 w-6 text-gold" />
               </div>
@@ -114,7 +114,7 @@ export function Navbar() {
           <div className="relative z-10 flex flex-col h-full">
             {/* Header with logo */}
             <div className="flex items-center justify-between px-4 py-4 border-b border-border/50">
-              <Link to="/" className="flex items-center gap-2" onClick={() => setIsMobileMenuOpen(false)}>
+              <Link to="/" className="flex items-center gap-2" onClick={() => { setIsMobileMenuOpen(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
                 <div className="p-2 rounded-lg bg-gold/10">
                   <Scissors className="h-6 w-6 text-gold" />
                 </div>
