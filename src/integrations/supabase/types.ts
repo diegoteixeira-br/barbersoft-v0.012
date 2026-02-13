@@ -1747,6 +1747,11 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_influencer_term: {
+        Args: { p_token: string; p_version?: string }
+        Returns: boolean
+      }
+      get_influencer_by_token: { Args: { p_token: string }; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

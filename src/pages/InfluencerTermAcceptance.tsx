@@ -24,20 +24,15 @@ export default function InfluencerTermAcceptance() {
     async function loadData() {
       if (!token) { setError("Token inválido"); setLoading(false); return; }
 
-      // Fetch influencer by term_token
-      const { data: inf, error: infErr } = await supabase
-        .from("influencer_partnerships" as any)
-        .select("*")
-        .eq("term_token", token)
-        .maybeSingle();
+      // Fetch influencer by term_token via secure RPC
+      const { data: infData, error: infErr } = await supabase
+        .rpc("get_influencer_by_token" as any, { p_token: token });
 
-      if (infErr || !inf) {
+      if (infErr || !infData) {
         setError("Link inválido ou expirado.");
         setLoading(false);
         return;
       }
-
-      const infData = inf as any;
 
       if (infData.term_accepted_at) {
         setAccepted(true);
@@ -102,16 +97,14 @@ export default function InfluencerTermAcceptance() {
     if (!influencer || !token) return;
     setIsSubmitting(true);
     try {
-      const { error } = await supabase
-        .from("influencer_partnerships" as any)
-        .update({
-          term_accepted_at: new Date().toISOString(),
-          term_version: termTemplate?.version || "1.0",
-          updated_at: new Date().toISOString(),
-        })
-        .eq("term_token", token);
+      const { data: success, error } = await supabase
+        .rpc("accept_influencer_term" as any, { 
+          p_token: token, 
+          p_version: termTemplate?.version || "1.0" 
+        });
 
       if (error) throw error;
+      if (!success) throw new Error("Termo já foi aceito ou link inválido.");
       setAccepted(true);
     } catch (e: any) {
       console.error("Error accepting term:", e);
