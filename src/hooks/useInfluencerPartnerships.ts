@@ -182,3 +182,38 @@ export function useMRR() {
     },
   });
 }
+
+export function useInfluencerTermTemplate() {
+  return useQuery({
+    queryKey: ["influencer-term-template"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("influencer_term_templates" as any)
+        .select("*")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (error) throw error;
+      return data as unknown as { id: string; title: string; content: string; version: string } | null;
+    },
+  });
+}
+
+// Calculate commission based on linked leads' payments
+export function useInfluencerLeadRevenue(influencerCode?: string) {
+  return useQuery({
+    queryKey: ["influencer-lead-revenue", influencerCode],
+    queryFn: async () => {
+      if (!influencerCode) return 0;
+      const { data, error } = await supabase
+        .from("companies")
+        .select("monthly_price")
+        .eq("signup_source", `inf:${influencerCode}`)
+        .in("plan_status", ["active"]);
+      if (error) throw error;
+      return (data || []).reduce((sum, c) => sum + (Number(c.monthly_price) || 0), 0);
+    },
+    enabled: !!influencerCode,
+  });
+}

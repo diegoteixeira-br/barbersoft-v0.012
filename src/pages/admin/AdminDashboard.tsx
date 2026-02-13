@@ -3,7 +3,7 @@ import { KPICard } from "@/components/admin/KPICard";
 import { ConversionChart } from "@/components/admin/ConversionChart";
 import { ReferralRankingCard } from "@/components/admin/ReferralRankingCard";
 import { useAdminStats } from "@/hooks/useAdminStats";
-import { useInfluencerPartnerships, useInfluencerPayments } from "@/hooks/useInfluencerPartnerships";
+import { useInfluencerPartnerships } from "@/hooks/useInfluencerPartnerships";
 import { Building2, DollarSign, UserPlus, CreditCard, Handshake } from "lucide-react";
 
 export default function AdminDashboard() {

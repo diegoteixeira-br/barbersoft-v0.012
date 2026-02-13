@@ -4,8 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, DollarSign, Users, TrendingUp, AlertCircle, Copy } from "lucide-react";
-import { useInfluencerPartnerships, useInfluencerPayments, useMRR, InfluencerPartnership } from "@/hooks/useInfluencerPartnerships";
+import { Plus, Edit, Trash2, DollarSign, Users, TrendingUp, AlertCircle, Copy, FileText } from "lucide-react";
+import { useInfluencerPartnerships, useInfluencerPayments, useMRR, useInfluencerTermTemplate, InfluencerPartnership } from "@/hooks/useInfluencerPartnerships";
 import { InfluencerFormModal } from "@/components/admin/InfluencerFormModal";
 import { InfluencerPaymentModal } from "@/components/admin/InfluencerPaymentModal";
 import { InfluencerPaymentsTable } from "@/components/admin/InfluencerPaymentsTable";
@@ -14,6 +14,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { toast } from "@/hooks/use-toast";
+import { generateInfluencerTermPDF } from "@/utils/generateInfluencerTermPDF";
 
 const statusMap: Record<string, { label: string; variant: "default" | "secondary" | "destructive" }> = {
   active: { label: "Ativo", variant: "default" },
@@ -23,6 +24,7 @@ const statusMap: Record<string, { label: string; variant: "default" | "secondary
 
 export default function AdminInfluencers() {
   const { partnershipsQuery, createPartnership, updatePartnership, deletePartnership } = useInfluencerPartnerships();
+  const { data: termTemplate } = useInfluencerTermTemplate();
   const { data: mrr } = useMRR();
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<InfluencerPartnership | null>(null);
@@ -69,6 +71,14 @@ export default function AdminInfluencers() {
     } else {
       createPartnership.mutate(values);
     }
+  };
+
+  const handleDownloadTerm = (inf: InfluencerPartnership) => {
+    if (!termTemplate) {
+      toast({ title: "Nenhum modelo de termo encontrado", variant: "destructive" });
+      return;
+    }
+    generateInfluencerTermPDF(inf, termTemplate.content, termTemplate.title);
   };
 
   return (
@@ -161,6 +171,9 @@ export default function AdminInfluencers() {
                       <TableCell><Badge variant={s.variant}>{s.label}</Badge></TableCell>
                       <TableCell>
                         <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                          <Button size="sm" variant="ghost" title="Gerar PDF do Termo" onClick={() => handleDownloadTerm(inf)}>
+                            <FileText className="h-4 w-4" />
+                          </Button>
                           <Button size="sm" variant="ghost" onClick={() => { setPaymentTarget(inf); setPaymentOpen(true); }}>
                             <DollarSign className="h-4 w-4" />
                           </Button>

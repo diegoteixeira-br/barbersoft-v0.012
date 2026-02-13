@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { InfluencerPartnership, useMRR } from "@/hooks/useInfluencerPartnerships";
+import { InfluencerPartnership, useInfluencerLeadRevenue } from "@/hooks/useInfluencerPartnerships";
 
 interface Props {
   open: boolean;
@@ -15,7 +15,7 @@ interface Props {
 }
 
 export function InfluencerPaymentModal({ open, onOpenChange, influencer, onSubmit, isLoading }: Props) {
-  const { data: mrr } = useMRR();
+  const { data: leadRevenue } = useInfluencerLeadRevenue(influencer?.referral_code);
   const now = new Date();
   const [periodMonth, setPeriodMonth] = useState(String(now.getMonth()));
   const [periodYear, setPeriodYear] = useState(String(now.getFullYear()));
@@ -23,8 +23,8 @@ export function InfluencerPaymentModal({ open, onOpenChange, influencer, onSubmi
 
   if (!influencer) return null;
 
-  const mrrValue = mrr || 0;
-  const amount = mrrValue * (influencer.commission_percent / 100);
+  const revenueValue = leadRevenue || 0;
+  const amount = revenueValue * (influencer.commission_percent / 100);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +37,7 @@ export function InfluencerPaymentModal({ open, onOpenChange, influencer, onSubmi
       partnership_id: influencer.id,
       period_start: periodStart,
       period_end: periodEnd,
-      mrr_base: mrrValue,
+      mrr_base: revenueValue,
       commission_percent: influencer.commission_percent,
       amount,
       status: "pending",
@@ -72,18 +72,21 @@ export function InfluencerPaymentModal({ open, onOpenChange, influencer, onSubmi
           </div>
           <div className="bg-slate-700/50 rounded-lg p-4 space-y-2">
             <div className="flex justify-between text-sm">
-              <span className="text-slate-400">MRR atual</span>
-              <span>R$ {mrrValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
+              <span className="text-slate-400">Receita dos leads vinculados</span>
+              <span>R$ {revenueValue.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-slate-400">Comissão</span>
               <span>{influencer.commission_percent}%</span>
             </div>
             <div className="flex justify-between font-bold text-green-400 border-t border-slate-600 pt-2">
-              <span>Valor</span>
+              <span>Valor da comissão</span>
               <span>R$ {amount.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
+          <p className="text-xs text-slate-400">
+            A comissão é calculada sobre o valor pago pelos leads vinculados ao link deste influenciador. Comissão vitalícia enquanto o lead mantiver assinatura ativa.
+          </p>
           <div>
             <Label>Método de Pagamento</Label>
             <Select value={paymentMethod} onValueChange={setPaymentMethod}>

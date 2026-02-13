@@ -937,6 +937,8 @@ export type Database = {
           referral_code: string
           started_at: string
           status: string
+          term_accepted_at: string | null
+          term_version: string | null
           updated_at: string
         }
         Insert: {
@@ -952,6 +954,8 @@ export type Database = {
           referral_code?: string
           started_at?: string
           status?: string
+          term_accepted_at?: string | null
+          term_version?: string | null
           updated_at?: string
         }
         Update: {
@@ -967,6 +971,8 @@ export type Database = {
           referral_code?: string
           started_at?: string
           status?: string
+          term_accepted_at?: string | null
+          term_version?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1023,6 +1029,36 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      influencer_term_templates: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          is_active: boolean
+          title: string
+          updated_at: string
+          version: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          title?: string
+          updated_at?: string
+          version?: string
+        }
+        Relationships: []
       }
       marketing_campaigns: {
         Row: {
