@@ -3,10 +3,16 @@ import { KPICard } from "@/components/admin/KPICard";
 import { ConversionChart } from "@/components/admin/ConversionChart";
 import { ReferralRankingCard } from "@/components/admin/ReferralRankingCard";
 import { useAdminStats } from "@/hooks/useAdminStats";
-import { Building2, DollarSign, UserPlus, CreditCard } from "lucide-react";
+import { useInfluencerPartnerships, useInfluencerPayments } from "@/hooks/useInfluencerPartnerships";
+import { Building2, DollarSign, UserPlus, CreditCard, Handshake } from "lucide-react";
 
 export default function AdminDashboard() {
   const { data: stats, isLoading } = useAdminStats();
+  const { partnershipsQuery } = useInfluencerPartnerships();
+  
+  const activeInfluencers = (partnershipsQuery.data || []).filter(i => i.status === "active");
+  const totalCommissionPercent = activeInfluencers.reduce((s, i) => s + Number(i.commission_percent), 0);
+  const estimatedCommission = (stats?.mrr || 0) * (totalCommissionPercent / 100);
 
   return (
     <AdminLayout>
@@ -22,7 +28,7 @@ export default function AdminDashboard() {
           </div>
         ) : (
           <>
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
               <KPICard
                 title="Barbearias Ativas"
                 value={stats?.totalActiveCompanies || 0}
@@ -44,6 +50,12 @@ export default function AdminDashboard() {
                 value={`${stats?.companiesUpToDate || 0} ok`}
                 subtitle={`${stats?.companiesOverdue || 0} atrasados`}
                 icon={<CreditCard className="h-6 w-6" />}
+              />
+              <KPICard
+                title="Comissões Influencers"
+                value={`R$ ${estimatedCommission.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`}
+                subtitle={`${activeInfluencers.length} ativos`}
+                icon={<Handshake className="h-6 w-6" />}
               />
             </div>
 
