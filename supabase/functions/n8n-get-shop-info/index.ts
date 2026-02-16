@@ -130,6 +130,27 @@ Deno.serve(async (req) => {
 
     console.log(`Found ${barbers?.length || 0} barbers and ${services?.length || 0} services`);
 
+    // Fetch business_settings to check whatsapp_agent_enabled
+    // First get the unit's user_id to find their settings
+    const { data: unitFull } = await supabase
+      .from("units")
+      .select("user_id")
+      .eq("id", unit.id)
+      .single();
+
+    let whatsappAgentEnabled = false;
+    if (unitFull?.user_id) {
+      const { data: settings } = await supabase
+        .from("business_settings")
+        .select("whatsapp_agent_enabled")
+        .eq("user_id", unitFull.user_id)
+        .maybeSingle();
+      
+      whatsappAgentEnabled = settings?.whatsapp_agent_enabled ?? false;
+    }
+
+    console.log(`WhatsApp agent enabled: ${whatsappAgentEnabled}`);
+
     // Return consolidated response
     const response = {
       success: true,
@@ -142,6 +163,7 @@ Deno.serve(async (req) => {
       },
       barbers: barbers || [],
       services: services || [],
+      whatsapp_agent_enabled: whatsappAgentEnabled,
     };
 
     return new Response(JSON.stringify(response), {
