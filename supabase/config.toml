@@ -23,3 +23,9 @@ verify_jwt = false
 
 [functions.send-barber-term]
 verify_jwt = false
+
+[functions.appointment-reminders]
+verify_jwt = false
+
+[functions.marketing-automations]
+verify_jwt = false

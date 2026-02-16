@@ -119,11 +119,13 @@ Deno.serve(async (req) => {
       console.log(`\n--- Processando empresa user_id=${settings.user_id}, lembrete=${reminderMinutes}min ---`);
 
       // Buscar company_id
-      const { data: company, error: companyError } = await supabase
+      const { data: companies, error: companyError } = await supabase
         .from("companies")
         .select("id, name")
         .eq("owner_user_id", settings.user_id)
-        .single();
+        .limit(1);
+
+      const company = companies?.[0];
 
       if (companyError || !company) {
         console.log(`Empresa não encontrada para user_id=${settings.user_id}`);
