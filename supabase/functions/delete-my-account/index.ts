@@ -225,8 +225,12 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
+    // Only expose safe user-facing messages
+    const safeMessage = errorMessage.includes("cancelar a assinatura")
+      ? errorMessage
+      : "Erro ao excluir a conta. Tente novamente.";
     return new Response(
-      JSON.stringify({ error: errorMessage }),
+      JSON.stringify({ error: safeMessage }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

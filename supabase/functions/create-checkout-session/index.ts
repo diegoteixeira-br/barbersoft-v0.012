@@ -196,7 +196,15 @@ serve(async (req) => {
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     logStep("ERROR", { message: errorMessage });
-    return new Response(JSON.stringify({ error: errorMessage }), {
+    // Return generic error to client, keep details in server logs
+    const safeMessages: Record<string, string> = {
+      "No authorization header provided": "Autenticação necessária.",
+      "Missing plan or billing parameter": "Parâmetros inválidos.",
+    };
+    const clientMessage = errorMessage.startsWith("Invalid plan") || errorMessage.startsWith("Invalid billing")
+      ? "Plano ou período inválido."
+      : safeMessages[errorMessage] || "Erro ao processar o checkout. Tente novamente.";
+    return new Response(JSON.stringify({ error: clientMessage }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });
