@@ -69,6 +69,18 @@ Deno.serve(async (req) => {
       term = data;
     }
 
+    // Generate a unique term_token and save it on the barber
+    const termToken = crypto.randomUUID();
+    const { error: updateErr } = await supabase
+      .from("barbers")
+      .update({ term_token: termToken })
+      .eq("id", barber_id);
+
+    if (updateErr) {
+      console.error("Error saving term_token:", updateErr);
+      throw new Error("Erro ao gerar token de aceite");
+    }
+
     // Replace variables in content
     const unitName = barber.units?.name || "Unidade";
     const content = term.content
@@ -78,6 +90,10 @@ Deno.serve(async (req) => {
 
     // Format content for HTML
     const htmlContent = content.replace(/\n/g, '<br/>');
+
+    // Build acceptance URL
+    const siteUrl = "https://barbersoft.com.br";
+    const acceptUrl = `${siteUrl}/termo-profissional/${termToken}`;
 
     const emailRes = await fetch("https://api.resend.com/emails", {
       method: "POST",
@@ -94,16 +110,28 @@ Deno.serve(async (req) => {
             <h1 style="color: #FF6B00; text-align: center;">BarberSoft</h1>
             <h2 style="text-align: center;">${term.title}</h2>
             <p>Olá, <strong>${barber.name}</strong>!</p>
-            <p>Segue abaixo o termo de parceria da sua barbearia. Este termo será apresentado para aceite no seu próximo login no sistema.</p>
+            <p>Segue abaixo o termo de parceria da sua barbearia. Para formalizar sua participação, leia o termo e clique no botão abaixo para aceitar.</p>
             <div style="background-color: #f8f8f8; border-radius: 8px; padding: 20px; margin: 20px 0; border: 1px solid #eee;">
               <p style="font-size: 12px; color: #666; margin-bottom: 10px;">Versão ${term.version}</p>
               <div style="font-size: 14px; line-height: 1.6;">
                 ${htmlContent}
               </div>
             </div>
+            
+            <div style="text-align: center; margin: 30px 0;">
+              <a href="${acceptUrl}" 
+                 style="display: inline-block; background-color: #FF6B00; color: #ffffff; padding: 16px 40px; border-radius: 8px; text-decoration: none; font-weight: bold; font-size: 18px; letter-spacing: 0.5px;">
+                ✅ Aceitar Termo de Parceria
+              </a>
+            </div>
+            
+            <p style="font-size: 13px; color: #666; text-align: center;">
+              Ao clicar no botão acima, você será direcionado para a página de aceite digital do termo.
+            </p>
+
             <p style="font-size: 13px; color: #666;">
-              <strong>Importante:</strong> Para aceitar este termo digitalmente, faça login no sistema BarberSoft. 
-              Sua comissão acordada é de <strong>${barber.commission_rate}%</strong>.
+              <strong>Importante:</strong> Sua comissão acordada é de <strong>${barber.commission_rate}%</strong>.
+              O aceite do termo é necessário para ativar sua agenda no sistema.
             </p>
             <hr style="border: none; border-top: 1px solid #eee; margin: 20px 0;" />
             <p style="color: #999; font-size: 11px; text-align: center;">

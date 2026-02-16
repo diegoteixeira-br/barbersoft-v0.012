@@ -20,3 +20,6 @@ verify_jwt = false
 
 [functions.reset-deletion-password]
 verify_jwt = false
+
+[functions.send-barber-term]
+verify_jwt = false

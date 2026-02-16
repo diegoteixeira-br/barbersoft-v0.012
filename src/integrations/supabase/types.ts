@@ -261,6 +261,7 @@ export type Database = {
           name: string
           phone: string | null
           photo_url: string | null
+          term_token: string | null
           unit_id: string
           user_id: string | null
         }
@@ -281,6 +282,7 @@ export type Database = {
           name: string
           phone?: string | null
           photo_url?: string | null
+          term_token?: string | null
           unit_id: string
           user_id?: string | null
         }
@@ -301,6 +303,7 @@ export type Database = {
           name?: string
           phone?: string | null
           photo_url?: string | null
+          term_token?: string | null
           unit_id?: string
           user_id?: string | null
         }
@@ -1789,10 +1792,22 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_barber_term: {
+        Args: {
+          p_commission_rate: number
+          p_content_snapshot: string
+          p_ip?: string
+          p_term_id: string
+          p_token: string
+          p_user_agent?: string
+        }
+        Returns: boolean
+      }
       accept_influencer_term: {
         Args: { p_token: string; p_version?: string }
         Returns: boolean
       }
+      get_barber_by_term_token: { Args: { p_token: string }; Returns: Json }
       get_influencer_by_token: { Args: { p_token: string }; Returns: Json }
       has_role: {
         Args: {

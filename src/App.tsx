@@ -52,6 +52,7 @@ import LGPD from "./pages/institucional/LGPD";
 
 import ResetDeletionPassword from "./pages/ResetDeletionPassword";
 import InfluencerTermAcceptance from "./pages/InfluencerTermAcceptance";
+import BarberTermAcceptance from "./pages/BarberTermAcceptance";
 
 const queryClient = new QueryClient();
 
@@ -126,6 +127,7 @@ const App = () => (
             <Route path="/lgpd" element={<LGPD />} />
             <Route path="/reset-deletion-password" element={<ResetDeletionPassword />} />
             <Route path="/termo-influenciador/:token" element={<InfluencerTermAcceptance />} />
+            <Route path="/termo-profissional/:token" element={<BarberTermAcceptance />} />
             
             {/* Protected Routes */}
             <Route path="/*" element={

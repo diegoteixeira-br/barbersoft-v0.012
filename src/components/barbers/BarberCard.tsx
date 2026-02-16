@@ -238,10 +238,22 @@ export function BarberCard({ barber, onEdit, onDelete, onToggleActive, onGenerat
 
           <div className="flex flex-col gap-2">
             <div className="flex items-center gap-2">
-              <Switch
-                checked={barber.is_active}
-                onCheckedChange={(checked) => onToggleActive(barber.id, checked)}
-              />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div>
+                    <Switch
+                      checked={barber.is_active}
+                      onCheckedChange={(checked) => onToggleActive(barber.id, checked)}
+                      disabled={hasActiveTerm && !termAcceptance}
+                    />
+                  </div>
+                </TooltipTrigger>
+                {hasActiveTerm && !termAcceptance && (
+                  <TooltipContent>
+                    Aceite do termo pendente. Envie o termo por email para o profissional aceitar.
+                  </TooltipContent>
+                )}
+              </Tooltip>
             </div>
             <div className="flex gap-1">
               <Button size="icon" variant="ghost" onClick={() => onEdit(barber)}>
