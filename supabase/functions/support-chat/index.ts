@@ -139,11 +139,28 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-    // Validate individual messages and truncate overly long ones
-    const validatedMessages = messages.map((m: any) => ({
-      role: m.role === "assistant" ? "assistant" : "user",
-      content: typeof m.content === "string" ? m.content.slice(0, 4000) : "",
-    }));
+    // Validate and sanitize individual messages
+    const sanitizeContent = (text: string): string => {
+      // Remove potential control characters and null bytes
+      let sanitized = text.replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, "");
+      // Truncate to max length
+      sanitized = sanitized.slice(0, 4000);
+      return sanitized;
+    };
+
+    const validatedMessages = messages
+      .filter((m: any) => typeof m.content === "string" && m.content.trim().length > 0)
+      .map((m: any) => ({
+        role: m.role === "assistant" ? "assistant" : "user",
+        content: sanitizeContent(m.content),
+      }));
+
+    if (validatedMessages.length === 0) {
+      return new Response(
+        JSON.stringify({ error: "Nenhuma mensagem válida." }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
@@ -211,7 +228,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Support chat error:", error);
     return new Response(
-      JSON.stringify({ error: error instanceof Error ? error.message : "Erro desconhecido" }),
+      JSON.stringify({ error: "Erro ao processar sua mensagem. Tente novamente." }),
       {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
