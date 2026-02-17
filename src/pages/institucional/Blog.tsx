@@ -6,7 +6,7 @@ import { SEOHead } from '@/components/seo/SEOHead';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import { blogPosts as staticPosts, categories } from '@/data/blogPosts';
+import { categories } from '@/data/blogPosts';
 import { supabase } from '@/integrations/supabase/client';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -36,29 +36,17 @@ const Blog = () => {
     },
   });
 
-  // Merge static + DB posts, DB posts first
-  const allPosts: UnifiedPost[] = [
-    ...dbPosts.map((p: any) => ({
-      id: p.id,
-      slug: p.slug,
-      title: p.title,
-      excerpt: p.excerpt || '',
-      category: p.category || 'Tecnologia',
-      image: p.image_url || '/placeholder.svg',
-      date: format(new Date(p.created_at), "dd 'de' MMMM, yyyy", { locale: ptBR }),
-      readTime: p.read_time || '5 min',
-    })),
-    ...staticPosts.map(p => ({
-      id: String(p.id),
-      slug: p.slug,
-      title: p.title,
-      excerpt: p.excerpt,
-      category: p.category,
-      image: p.image,
-      date: p.date,
-      readTime: p.readTime,
-    })),
-  ];
+  // Only show posts from database (legacy posts were imported)
+  const allPosts: UnifiedPost[] = dbPosts.map((p: any) => ({
+    id: p.id,
+    slug: p.slug,
+    title: p.title,
+    excerpt: p.excerpt || '',
+    category: p.category || 'Tecnologia',
+    image: p.image_url || '/placeholder.svg',
+    date: format(new Date(p.created_at), "dd 'de' MMMM, yyyy", { locale: ptBR }),
+    readTime: p.read_time || '5 min',
+  }));
 
   const filteredPosts = selectedCategory === 'Todos'
     ? allPosts
