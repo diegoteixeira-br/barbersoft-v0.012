@@ -27,6 +27,13 @@ interface CommissionTableProps {
   calculationBase?: 'gross' | 'net';
 }
 
+// Check if any appointment has barber-specific card fees
+function hasAnyBarberFees(appointments: FinancialAppointment[]): boolean {
+  return appointments.some(apt => 
+    apt.barber?.debit_card_fee_percent != null || apt.barber?.credit_card_fee_percent != null
+  );
+}
+
 export function CommissionTable({ 
   appointments, 
   isLoading,
@@ -40,6 +47,9 @@ export function CommissionTable({
       currency: "BRL",
     }).format(value);
   };
+
+  // Show fee columns only when calculation base is 'net' or any barber has individual fees
+  const showFeeColumns = calculationBase === 'net' || hasAnyBarberFees(appointments);
 
   const totals = appointments.reduce(
     (acc, apt) => {
@@ -122,8 +132,8 @@ export function CommissionTable({
               <TableHead>Serviço</TableHead>
               <TableHead>Pagamento</TableHead>
               <TableHead className="text-right">Valor Bruto</TableHead>
-              <TableHead className="text-right">Taxa Cartão</TableHead>
-              <TableHead className="text-right">Valor Líquido</TableHead>
+              {showFeeColumns && <TableHead className="text-right">Taxa Cartão</TableHead>}
+              {showFeeColumns && <TableHead className="text-right">Valor Líquido</TableHead>}
               <TableHead className="text-center">Comissão (%)</TableHead>
               <TableHead className="text-right">Valor Comissão</TableHead>
               <TableHead className="text-right">Lucro Barbearia</TableHead>
@@ -184,12 +194,16 @@ export function CommissionTable({
                   <TableCell className="text-right">
                     {formatCurrency(appointment.total_price)}
                   </TableCell>
-                  <TableCell className="text-right text-red-500">
-                    {cardFee > 0 ? `-${formatCurrency(cardFee)}` : "-"}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    {formatCurrency(netValue)}
-                  </TableCell>
+                  {showFeeColumns && (
+                    <TableCell className="text-right text-red-500">
+                      {cardFee > 0 ? `-${formatCurrency(cardFee)}` : "-"}
+                    </TableCell>
+                  )}
+                  {showFeeColumns && (
+                    <TableCell className="text-right">
+                      {formatCurrency(netValue)}
+                    </TableCell>
+                  )}
                   <TableCell className="text-center text-muted-foreground">
                     {commissionRate}%
                   </TableCell>
@@ -209,12 +223,16 @@ export function CommissionTable({
               <TableCell className="text-right font-bold">
                 {formatCurrency(totals.total)}
               </TableCell>
-              <TableCell className="text-right font-bold text-red-500">
-                {totals.cardFee > 0 ? `-${formatCurrency(totals.cardFee)}` : "-"}
-              </TableCell>
-              <TableCell className="text-right font-bold">
-                {formatCurrency(totals.netValue)}
-              </TableCell>
+              {showFeeColumns && (
+                <TableCell className="text-right font-bold text-red-500">
+                  {totals.cardFee > 0 ? `-${formatCurrency(totals.cardFee)}` : "-"}
+                </TableCell>
+              )}
+              {showFeeColumns && (
+                <TableCell className="text-right font-bold">
+                  {formatCurrency(totals.netValue)}
+                </TableCell>
+              )}
               <TableCell />
               <TableCell className="text-right font-bold text-primary">
                 {formatCurrency(totals.commission)}

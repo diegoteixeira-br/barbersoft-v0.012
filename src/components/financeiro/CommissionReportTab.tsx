@@ -68,9 +68,14 @@ export function CommissionReportTab() {
   const { appointments, isLoading } = useFinancialData(dateRange, selectedBarberId);
 
   // Get fee settings
-  const debitFeePercent = settings?.debit_card_fee_percent ?? 1.5;
-  const creditFeePercent = settings?.credit_card_fee_percent ?? 3.0;
+  const globalDebitFeePercent = settings?.debit_card_fee_percent ?? 1.5;
+  const globalCreditFeePercent = settings?.credit_card_fee_percent ?? 3.0;
   const calculationBase = (settings?.commission_calculation_base as 'gross' | 'net') ?? 'gross';
+
+  // Only apply global fees when calculation base is 'net'
+  // Barber individual fees still apply regardless (handled inside calculateCardFee)
+  const debitFeePercent = calculationBase === 'net' ? globalDebitFeePercent : 0;
+  const creditFeePercent = calculationBase === 'net' ? globalCreditFeePercent : 0;
 
   // Calculate totals with fees
   const totals = useMemo(() => {
@@ -171,12 +176,16 @@ export function CommissionReportTab() {
         <span className="text-sm text-muted-foreground">
           Base de cálculo: <Badge variant="outline" className="ml-1">{calculationBase === 'net' ? 'Valor Líquido' : 'Valor Bruto'}</Badge>
         </span>
-        <span className="text-sm text-muted-foreground ml-4">
-          Taxa Débito: <Badge variant="outline">{debitFeePercent}%</Badge>
-        </span>
-        <span className="text-sm text-muted-foreground ml-2">
-          Taxa Crédito: <Badge variant="outline">{creditFeePercent}%</Badge>
-        </span>
+        {calculationBase === 'net' && (
+          <>
+            <span className="text-sm text-muted-foreground ml-4">
+              Taxa Débito: <Badge variant="outline">{globalDebitFeePercent}%</Badge>
+            </span>
+            <span className="text-sm text-muted-foreground ml-2">
+              Taxa Crédito: <Badge variant="outline">{globalCreditFeePercent}%</Badge>
+            </span>
+          </>
+        )}
       </div>
 
       {/* Filters */}
@@ -264,58 +273,68 @@ export function CommissionReportTab() {
       </div>
 
       {/* Summary Cards - Updated with fees */}
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <TooltipProvider>
-          <RevenueCard
-            title={selectedBarber ? `Total Bruto - ${selectedBarber.name}` : "Total Bruto"}
-            value={formatCurrency(totals.gross)}
-            subtitle={`${appointments.length} atendimento(s)`}
-            icon={DollarSign}
-            variant="default"
-          />
-          
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div>
-                <RevenueCard
-                  title="Taxas de Cartão"
-                  value={`-${formatCurrency(totals.cardFees)}`}
-                  subtitle="Débito + Crédito"
-                  icon={Receipt}
-                  variant="danger"
-                />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Débito: {debitFeePercent}% | Crédito: {creditFeePercent}%</p>
-            </TooltipContent>
-          </Tooltip>
+      {(() => {
+        const showFeeCards = totals.cardFees > 0;
+        const cols = showFeeCards ? 'md:grid-cols-5' : 'md:grid-cols-3';
+        return (
+          <div className={`grid grid-cols-2 ${cols} gap-4`}>
+            <TooltipProvider>
+              <RevenueCard
+                title={selectedBarber ? `Total Bruto - ${selectedBarber.name}` : "Total Bruto"}
+                value={formatCurrency(totals.gross)}
+                subtitle={`${appointments.length} atendimento(s)`}
+                icon={DollarSign}
+                variant="default"
+              />
+              
+              {showFeeCards && (
+                <>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div>
+                        <RevenueCard
+                          title="Taxas de Cartão"
+                          value={`-${formatCurrency(totals.cardFees)}`}
+                          subtitle="Débito + Crédito"
+                          icon={Receipt}
+                          variant="danger"
+                        />
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Débito: {globalDebitFeePercent}% | Crédito: {globalCreditFeePercent}%</p>
+                    </TooltipContent>
+                  </Tooltip>
 
-          <RevenueCard
-            title="Total Líquido"
-            value={formatCurrency(totals.net)}
-            subtitle="Após taxas de cartão"
-            icon={DollarSign}
-            variant="default"
-          />
+                  <RevenueCard
+                    title="Total Líquido"
+                    value={formatCurrency(totals.net)}
+                    subtitle="Após taxas de cartão"
+                    icon={DollarSign}
+                    variant="default"
+                  />
+                </>
+              )}
 
-          <RevenueCard
-            title="Comissão a Pagar"
-            value={formatCurrency(totals.commission)}
-            subtitle={selectedBarber ? `Taxa: ${selectedBarber.commission_rate || 50}%` : calculationBase === 'net' ? 'Sobre valor líquido' : 'Sobre valor bruto'}
-            icon={Wallet}
-            variant="warning"
-          />
+              <RevenueCard
+                title="Comissão a Pagar"
+                value={formatCurrency(totals.commission)}
+                subtitle={selectedBarber ? `Taxa: ${selectedBarber.commission_rate || 50}%` : calculationBase === 'net' ? 'Sobre valor líquido' : 'Sobre valor bruto'}
+                icon={Wallet}
+                variant="warning"
+              />
 
-          <RevenueCard
-            title="Lucro da Barbearia"
-            value={formatCurrency(totals.profit)}
-            subtitle="Líquido - Comissões"
-            icon={TrendingUp}
-            variant="success"
-          />
-        </TooltipProvider>
-      </div>
+              <RevenueCard
+                title="Lucro da Barbearia"
+                value={formatCurrency(totals.profit)}
+                subtitle="Líquido - Comissões"
+                icon={TrendingUp}
+                variant="success"
+              />
+            </TooltipProvider>
+          </div>
+        );
+      })()}
 
       {/* Payment Method Breakdown */}
       <div className="space-y-3">
@@ -345,29 +364,37 @@ export function CommissionReportTab() {
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-blue-500" />
               <span className="text-sm font-medium text-muted-foreground">Débito</span>
-              <Badge variant="outline" className="text-xs">-{debitFeePercent}%</Badge>
+              {(calculationBase === 'net' || paymentBreakdown.debit_card.cardFee > 0) && (
+                <Badge variant="outline" className="text-xs">-{globalDebitFeePercent}%</Badge>
+              )}
             </div>
             <p className="text-lg font-bold text-foreground">{formatCurrency(paymentBreakdown.debit_card.total)}</p>
             <p className="text-xs text-muted-foreground">
-              {paymentBreakdown.debit_card.count} atend. • Taxa: {formatCurrency(paymentBreakdown.debit_card.cardFee)}
+              {paymentBreakdown.debit_card.count} atend.{(calculationBase === 'net' || paymentBreakdown.debit_card.cardFee > 0) && ` • Taxa: ${formatCurrency(paymentBreakdown.debit_card.cardFee)}`}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Líq: {formatCurrency(paymentBreakdown.debit_card.netValue)} • Com: {formatCurrency(paymentBreakdown.debit_card.commission)}
-            </p>
+            {(calculationBase === 'net' || paymentBreakdown.debit_card.cardFee > 0) && (
+              <p className="text-xs text-muted-foreground">
+                Líq: {formatCurrency(paymentBreakdown.debit_card.netValue)} • Com: {formatCurrency(paymentBreakdown.debit_card.commission)}
+              </p>
+            )}
           </div>
           <div className="p-4 rounded-lg border border-border bg-card">
             <div className="flex items-center gap-2 mb-2">
               <CreditCard className="h-4 w-4 text-purple-500" />
               <span className="text-sm font-medium text-muted-foreground">Crédito</span>
-              <Badge variant="outline" className="text-xs">-{creditFeePercent}%</Badge>
+              {(calculationBase === 'net' || paymentBreakdown.credit_card.cardFee > 0) && (
+                <Badge variant="outline" className="text-xs">-{globalCreditFeePercent}%</Badge>
+              )}
             </div>
             <p className="text-lg font-bold text-foreground">{formatCurrency(paymentBreakdown.credit_card.total)}</p>
             <p className="text-xs text-muted-foreground">
-              {paymentBreakdown.credit_card.count} atend. • Taxa: {formatCurrency(paymentBreakdown.credit_card.cardFee)}
+              {paymentBreakdown.credit_card.count} atend.{(calculationBase === 'net' || paymentBreakdown.credit_card.cardFee > 0) && ` • Taxa: ${formatCurrency(paymentBreakdown.credit_card.cardFee)}`}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Líq: {formatCurrency(paymentBreakdown.credit_card.netValue)} • Com: {formatCurrency(paymentBreakdown.credit_card.commission)}
-            </p>
+            {(calculationBase === 'net' || paymentBreakdown.credit_card.cardFee > 0) && (
+              <p className="text-xs text-muted-foreground">
+                Líq: {formatCurrency(paymentBreakdown.credit_card.netValue)} • Com: {formatCurrency(paymentBreakdown.credit_card.commission)}
+              </p>
+            )}
           </div>
           <div className="p-4 rounded-lg border border-border bg-card">
             <div className="flex items-center gap-2 mb-2">
