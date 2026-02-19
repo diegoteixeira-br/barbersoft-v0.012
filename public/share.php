@@ -7,14 +7,23 @@ if (empty($slug)) {
 }
 
 $slug = preg_replace('/[^a-zA-Z0-9\-_]/', '', $slug);
-$apiUrl = 'https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=' . urlencode($slug);
 
-// Forward the original User-Agent so the Edge Function can detect crawlers
-$userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : 'PHP-Share-Proxy';
+// Detect crawlers in PHP directly — redirect real users immediately
+$userAgent = isset($_SERVER['HTTP_USER_AGENT']) ? $_SERVER['HTTP_USER_AGENT'] : '';
+$isCrawler = preg_match('/facebookexternalhit|facebot|whatsapp|twitterbot|linkedinbot|telegrambot|slackbot|discordbot|bot|crawler|spider|preview/i', $userAgent);
+
+if (!$isCrawler) {
+    // Real user — redirect straight to the blog post, no need to call edge function
+    header('Location: /blog/' . $slug);
+    exit;
+}
+
+// Crawler — fetch OG metadata HTML from Edge Function
+$apiUrl = 'https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=' . urlencode($slug);
 
 $html = false;
 
-// Tenta file_get_contents primeiro
+// Try file_get_contents
 $context = stream_context_create([
     'http' => [
         'timeout' => 10,
@@ -24,7 +33,7 @@ $context = stream_context_create([
 ]);
 $html = @file_get_contents($apiUrl, false, $context);
 
-// Fallback para cURL
+// Fallback to cURL
 if ($html === false && function_exists('curl_init')) {
     $ch = curl_init($apiUrl);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
@@ -36,22 +45,13 @@ if ($html === false && function_exists('curl_init')) {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    // Accept 200 (crawler HTML) or handle 302 (non-crawler redirect)
-    if ($httpCode === 302) {
-        $redirectUrl = curl_getinfo($ch, CURLINFO_REDIRECT_URL);
-        if ($redirectUrl) {
-            header('Location: ' . $redirectUrl);
-            exit;
-        }
-    }
-
     if ($httpCode !== 200) {
         $html = false;
     }
 }
 
-if ($html === false) {
-    // Fallback: redirect to blog post directly
+if ($html === false || strlen(trim($html)) === 0) {
+    // Fallback: redirect to blog post
     header('Location: /blog/' . $slug);
     exit;
 }
