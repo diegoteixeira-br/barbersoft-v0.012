@@ -59,6 +59,45 @@ serve(async (req) => {
     const { action, unit_id, instance_name } = body;
     console.log(`Action: ${action}, Unit ID: ${unit_id}, User: ${user.id}`);
 
+    // Handle force-delete action (doesn't require unit_id)
+    if (action === 'force-delete') {
+      if (!instance_name) {
+        throw new Error('Nome da instância é obrigatório');
+      }
+      console.log(`Force deleting instance: ${instance_name}`);
+      
+      try {
+        await fetch(`${EVOLUTION_API_URL}/instance/logout/${instance_name}`, {
+          method: 'DELETE',
+          headers: { 'apikey': EVOLUTION_GLOBAL_KEY! },
+        });
+      } catch (e) { /* non-critical */ }
+      
+      try {
+        const delRes = await fetch(`${EVOLUTION_API_URL}/instance/delete/${instance_name}`, {
+          method: 'DELETE',
+          headers: { 'apikey': EVOLUTION_GLOBAL_KEY! },
+        });
+        const delData = await delRes.json();
+        console.log('Force delete result:', JSON.stringify(delData));
+      } catch (e) {
+        console.error('Force delete error:', e);
+      }
+
+      // Also clean up any unit that references this instance
+      await supabase
+        .from('units')
+        .update({ evolution_instance_name: null, evolution_api_key: null })
+        .eq('evolution_instance_name', instance_name);
+
+      return new Response(JSON.stringify({
+        success: true,
+        message: `Instância ${instance_name} deletada com sucesso`,
+      }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // For unit-based operations, validate the unit belongs to the user
     if (!unit_id) {
       throw new Error('ID da unidade é obrigatório');
