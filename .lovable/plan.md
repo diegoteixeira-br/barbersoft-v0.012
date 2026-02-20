@@ -1,45 +1,33 @@
 
+# Corrigir Links de Compartilhamento (Facebook e WhatsApp)
 
-# Notificacao de Novo Artigo por Email para Usuarios BarberSoft
+## Problema Atual
+Ambos os botoes de compartilhamento (Facebook e WhatsApp) estao usando a URL direta da Edge Function do Supabase (`lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=...`). Isso faz com que:
+- **Facebook**: Mostra o dominio do Supabase no preview em vez de `barbersoft.com.br`
+- **WhatsApp**: Mostra a URL feia do Supabase na mensagem em vez da URL limpa
 
-## Objetivo
-Quando um novo artigo do blog for publicado pelo admin, enviar automaticamente um email para todos os donos de empresas cadastrados na BarberSoft, notificando sobre o novo conteudo.
+## Solucao
+O site ja tem um proxy PHP configurado em `barbersoft.com.br/share/blog/{slug}` que redireciona crawlers para a Edge Function e usuarios reais para o blog. Esse proxy ja funciona perfeitamente (como mostrado no print 3 do WhatsApp).
 
-## Como vai funcionar
+A correcao e simples: trocar a URL de compartilhamento para usar o proxy do dominio proprio.
 
-1. O admin cria/salva um novo artigo no painel de blog
-2. Apos salvar, o sistema chama uma Edge Function que busca todos os emails dos usuarios cadastrados (tabela `companies` via `auth.users`)
-3. A Edge Function envia um email bonito via Resend para cada usuario com o titulo, resumo e link do artigo
+## Mudanca
 
-## Detalhes Tecnicos
+### Arquivo: `src/pages/institucional/BlogPost.tsx`
 
-### 1. Nova Edge Function: `notify-blog-post`
-- Recebe: `post_id` (ou `slug`, `title`, `excerpt`, `image_url`)
-- Valida que o chamador e super admin
-- Busca todos os usuarios com empresa ativa na tabela `companies` (owner_user_id)
-- Usa o service_role_key para listar os emails via `supabase.auth.admin.listUsers()`
-- Envia email via Resend para cada usuario com template HTML estilizado (cores da BarberSoft)
-- Retorna contagem de emails enviados/falhados
+Trocar a URL usada nos botoes de compartilhamento:
 
-### 2. Integracao no Frontend (AdminBlog.tsx)
-- Apos criar um novo post com sucesso no `handleSave`, chamar `supabase.functions.invoke("notify-blog-post", { body: { ... } })`
-- Adicionar um botao "Notificar Usuarios" na tabela de posts existentes para reenviar manualmente
-- Mostrar toast de sucesso/erro com contagem de emails enviados
+**De:**
+```
+edgeFunctionUrl = https://lgrugpsyewvinlkgmeve.supabase.co/functions/v1/blog-share?slug=...
+```
 
-### 3. Template do Email
-- Header com logo BarberSoft
-- Imagem do artigo (se houver)
-- Titulo e resumo
-- Botao "Ler Artigo Completo" linkando para `/blog/{slug}`
-- Footer com link de descadastro (opt-out futuro)
+**Para:**
+```
+shareUrl = https://barbersoft.com.br/share/blog/{slug}
+```
 
-### 4. Seguranca
-- Apenas super admin pode acionar a funcao
-- Rate limiting natural do Resend (sem spam)
-- Usa `RESEND_API_KEY` ja configurado como secret
+- **Facebook** vai usar: `https://www.facebook.com/sharer/sharer.php?u=https://barbersoft.com.br/share/blog/{slug}` -- mostrara `barbersoft.com.br` no preview
+- **WhatsApp** vai usar: `https://api.whatsapp.com/send?text={titulo} https://barbersoft.com.br/share/blog/{slug}` -- mostrara a URL limpa com imagem/titulo/descricao como no print 3
 
-### Arquivos a criar/modificar
-- **Criar**: `supabase/functions/notify-blog-post/index.ts` - Edge Function de envio
-- **Modificar**: `src/pages/admin/AdminBlog.tsx` - Botao de notificacao e chamada apos criar post
-- **Modificar**: `src/hooks/useBlogPosts.ts` - Callback opcional para notificacao pos-criacao
-
+Nenhuma alteracao na Edge Function ou no PHP -- apenas a URL que o frontend usa para montar os links de compartilhamento.
